@@ -1,3 +1,4 @@
+package draw
 import scala.swing._
 
 abstract class Element {
