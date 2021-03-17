@@ -1,5 +1,7 @@
 package draw
 import scala.swing._
+import scala.swing.BorderPanel.Position._
+import java.awt.Color._
 
 object GUI extends SimpleSwingApplication {
     def top = new MainFrame {
@@ -8,16 +10,26 @@ object GUI extends SimpleSwingApplication {
         
         menuBar = new MenuBar {
             contents += new Menu("File") {
-                 
+                 contents += new MenuItem(Action("Open") {
+                    // TODO
+                 })
+                 contents += new MenuItem(Action("Save") {
+                    // TODO
+                 })
             }
-            contents += new Button(Action("Quit") {
+            
+        }
+        val buttonsPanel = new BoxPanel(Orientation.Horizontal) {
+            //preferredSize = new Dimension(500, 50)
+            background = BLUE
+            contents += new Button(Action("QUIT") {
                 sys.exit()
             })
         }
-        val gridPanel = new GridPanel(1, 2) {
-            contents += Canvas
+        contents = new BorderPanel {
+            layout(Canvas) = Center
+            layout(buttonsPanel) = North
         }
-        contents = gridPanel
         size = new Dimension(500, 300)
     }
 
