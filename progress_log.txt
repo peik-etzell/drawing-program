@@ -1,0 +1,23 @@
+- Added Operation.scala, which handles mouse clicks and moves depending on the mode that is selected,
+for example creating rectangles or moving elements etc.
+
+- Planning to simplify and use GUI.scala as main object, and remove Program.scala
+- Also in GUI, added UIManager style handling
+- Made more dropdown menus for the menubar, while commenting out the buttonpanel from before,
+but still probably using it later on
+
+- Canvas is essentially a buffer now, that calls each elements draw method, has undo/redo handling
+
+- Element is very much work in progress, with only drawing of basic rectangles and lines possible.
+- Operation.scala also has a Preferences object with the current settings of operations, such as color of new elements and if shapes should be filled etc.
+
+- Filemanager has no work done yet
+
+
+Right now the drawing has gotten more laggy, so I am planning to implement memoization for the Element class,
+and maybe multithreading also.
+No Unittesting has been done yet, only testing by hand, but that would be good to get going when more operations get implemented, 
+like rotations and such.
+So far maybe 20 hours of work have been put into this, feeling like it is progressing pretty good, ahead of schedule.
+
+
