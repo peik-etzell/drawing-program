@@ -14,6 +14,11 @@ trait Operation {
     def move(point: Point)
 }
 
+object Select extends Operation {
+    def click(point: Point): Unit = ???
+    def move(point: Point): Unit = ???
+}
+
 abstract class Maker extends Operation {
     private var clicked = false
     private var shape: Shape = null
@@ -33,6 +38,7 @@ abstract class Maker extends Operation {
     def move(point: Point) {
         if (clicked) {
             shape.end = point
+            GUI.canvas.repaint()
         }
     }
 }
@@ -40,3 +46,20 @@ abstract class Maker extends Operation {
 object makeRect extends Maker {def makeShape(point: Point): Shape = new Rectangle(point)}
 object makeOval extends Maker {def makeShape(point: Point): Shape = new Oval(point)}
 object makeLine extends Maker {def makeShape(point: Point): Shape = new Line(point)}
+
+
+
+object Rotate extends Operation {
+    def click(point: Point): Unit = ???
+    def move(point: Point): Unit = ???
+}
+
+object Translate extends Operation {
+    def click(point: Point): Unit = ???
+    def move(point: Point): Unit = ???
+}
+
+object Scale extends Operation {
+    def click(point: Point): Unit = ???
+    def move(point: Point): Unit = ???
+}

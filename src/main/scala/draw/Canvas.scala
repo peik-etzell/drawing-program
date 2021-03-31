@@ -33,6 +33,7 @@ class Canvas extends Panel {
     }
     
     override def paintComponent(g: Graphics2D): Unit = {
+        g.clearRect(0, 0, 1000, 1000)
         elements.foreach(_.draw(g))
     }
 }

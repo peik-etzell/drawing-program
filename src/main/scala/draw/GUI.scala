@@ -11,6 +11,7 @@ object GUI extends SimpleSwingApplication {
     
     val defaultLook = new javax.swing.plaf.nimbus.NimbusLookAndFeel
     UIManager.setLookAndFeel(defaultLook)
+    
     // try {
     //     val systemLook = UIManager.getSystemLookAndFeelClassName()
     //     UIManager.setLookAndFeel(systemLook)
@@ -22,7 +23,7 @@ object GUI extends SimpleSwingApplication {
     val canvas = new Canvas
     var color = black
     
-    def top = new MainFrame {
+    val mainFrame = new MainFrame {
         title = "Drawing Program"
         
         listenTo(canvas.mouse.moves)
@@ -30,9 +31,7 @@ object GUI extends SimpleSwingApplication {
 
         reactions += {
             case MouseMoved(_, point, _) => {
-                // operation.move(point)
                 Preferences.operation.move(point)
-                repaint()
             }
             case MouseClicked(_, point, _, _, _) => {
                 Preferences.operation.click(point)
@@ -50,15 +49,12 @@ object GUI extends SimpleSwingApplication {
             }
             contents += new Menu("Shapes") {
                 contents += new MenuItem(Action("Oval") {
-                    // operation = makeOval
                     Preferences.operation = makeOval
                 })
                 contents += new MenuItem(Action("Rectangle") {
-                    // operation = makeRect
                     Preferences.operation = makeRect
                 })
                 contents += new MenuItem(Action("Line") {
-                    // operation = makeLine
                     Preferences.operation = makeLine
                 })
                 contents += new MenuItem(Action("Freehand") {
@@ -67,24 +63,19 @@ object GUI extends SimpleSwingApplication {
             }
             contents += new Menu("Color") {
                 contents += new MenuItem(Action("Black") {
-                    // color = black
                     Preferences.color = black
                     
                 })
                 contents += new MenuItem(Action("White") {
-                    // color = white
                     Preferences.color = white
                 })
                 contents += new MenuItem(Action("Blue") {
-                    // color = blue
                     Preferences.color = blue
                 })
                 contents += new MenuItem(Action("Yellow") {
-                    // color = yellow
                     Preferences.color = yellow
                 })
                 contents += new MenuItem(Action("Red") {
-                    // color = red
                     Preferences.color = red
                 })
             }
@@ -125,4 +116,6 @@ object GUI extends SimpleSwingApplication {
 
         size = new Dimension(800, 600)
     }
+
+    def top = mainFrame
 }
