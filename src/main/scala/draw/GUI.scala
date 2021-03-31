@@ -32,27 +32,16 @@ object GUI extends SimpleSwingApplication {
         size = new Dimension(800, 600)
         val toggle = new ToggleButton("Fill Off")
 
-
-        listenTo(canvas.mouse.moves)
-        listenTo(canvas.mouse.clicks)
         listenTo(toggle)
 
         reactions += {
-            case MouseMoved(_, point, _) => {
-                Preferences.operation.move(point)
-            }
-            case MouseClicked(_, point, _, _, _) => {
-                Preferences.operation.click(point)
-            }
             case ButtonClicked(component) if component == toggle => {
                 toggle.text = if (toggle.selected) {
                     Preferences.fill = true; "Fill On"
                  } else {
                     Preferences.fill = false; "Fill Off"
                 }
-                
             }
-                
         }   
 
         menuBar = new MenuBar {
@@ -81,7 +70,6 @@ object GUI extends SimpleSwingApplication {
             contents += new Menu("Color") {
                 contents += new MenuItem(Action("Black") {
                     Preferences.color = black
-                    
                 })
                 contents += new MenuItem(Action("White") {
                     Preferences.color = white
