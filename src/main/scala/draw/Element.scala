@@ -17,14 +17,22 @@ abstract class Element(var start: Point) {
 }
 
 abstract class Shape(start: Point) extends Element(start) {
-    var color: Color = Preferences.color
+    var color: Color = Mode.color
     var end: Point = start
-    var fill = Preferences.fill
+    var fill = Mode.fill
 }
 
 class Oval(start: Point) extends Shape(start) {
+    override def center = start
+    def radius: Int = start.distance(end).floor.toInt
+
     def draw(g: Graphics2D) = {
-        
+        g.setColor(color)
+        if (fill) {
+            g.fillOval(start.x - radius / 2, start.y - radius / 2, radius, radius)
+        } else {
+            g.drawOval(start.x - radius / 2, start.y - radius / 2, radius, radius)
+        }
     }
 }
 
@@ -48,6 +56,10 @@ class Rectangle(start: Point) extends Shape(start) {
 }
 
 class Line(start: Point) extends Shape(start) {
+    override def center = {
+        new Point((start.x + end.x) / 2, (start.y + end.y) / 2)
+    }
+    
     def draw(g: Graphics2D) = {
         g.setColor(color)
         g.drawLine(start.x, start.y, end.x, end.y)

@@ -3,7 +3,6 @@ package draw
 import scala.swing._
 import scala.swing.BorderPanel.Position._
 import java.awt.Color._
-import scala.swing.event.{MouseClicked, MouseMoved, MouseDragged}
 import scala.collection.mutable.Buffer
 import javax.swing.UIManager
 import scala.swing.event.ButtonClicked
@@ -13,16 +12,14 @@ object GUI extends SimpleSwingApplication {
     val defaultLook = new javax.swing.plaf.nimbus.NimbusLookAndFeel
     UIManager.setLookAndFeel(defaultLook)
 
-    // try {
-    //     val systemLook = UIManager.getSystemLookAndFeelClassName()
-    //     UIManager.setLookAndFeel(systemLook)
-    // } catch {
-    //     case e: Exception => println("Error using your system UI style, using 'Nimbus'\n" + e)
-    // }
+    try {
+        val systemLook = UIManager.getSystemLookAndFeelClassName()
+        UIManager.setLookAndFeel(systemLook)
+    } catch {
+        case e: Exception => println("Error using your system UI style, using 'Nimbus'\n" + e)
+    }
 
-    var operation: Operation = makeRect
     val canvas = new Canvas // TODO: Some handling for background canvases after opening new ones on top
-    var color = black
     
     val mainFrame = new MainFrame {
         title = "Drawing Program"
@@ -37,9 +34,9 @@ object GUI extends SimpleSwingApplication {
         reactions += {
             case ButtonClicked(component) if component == toggle => {
                 toggle.text = if (toggle.selected) {
-                    Preferences.fill = true; "Fill On"
+                    Mode.fill = true; "Fill On"
                  } else {
-                    Preferences.fill = false; "Fill Off"
+                    Mode.fill = false; "Fill Off"
                 }
             }
         }   
@@ -55,13 +52,13 @@ object GUI extends SimpleSwingApplication {
             }
             contents += new Menu("Shapes") {
                 contents += new MenuItem(Action("Oval") {
-                    Preferences.operation = makeOval
+                    Mode.operation = MakeOval
                 })
                 contents += new MenuItem(Action("Rectangle") {
-                    Preferences.operation = makeRect
+                    Mode.operation = MakeRect
                 })
                 contents += new MenuItem(Action("Line") {
-                    Preferences.operation = makeLine
+                    Mode.operation = MakeLine
                 })
                 contents += new MenuItem(Action("Freehand") {
                     ???
@@ -69,19 +66,19 @@ object GUI extends SimpleSwingApplication {
             }
             contents += new Menu("Color") {
                 contents += new MenuItem(Action("Black") {
-                    Preferences.color = black
+                    Mode.color = black
                 })
                 contents += new MenuItem(Action("White") {
-                    Preferences.color = white
+                    Mode.color = white
                 })
                 contents += new MenuItem(Action("Blue") {
-                    Preferences.color = blue
+                    Mode.color = blue
                 })
                 contents += new MenuItem(Action("Yellow") {
-                    Preferences.color = yellow
+                    Mode.color = yellow
                 })
                 contents += new MenuItem(Action("Red") {
-                    Preferences.color = red
+                    Mode.color = red
                 })
             }
 
@@ -96,8 +93,6 @@ object GUI extends SimpleSwingApplication {
             contents += new Button(Action("Redo") {
                 canvas.redo()
             })
-
-            
         }
 
         // val buttonsPanel = new BoxPanel(Orientation.Horizontal) {

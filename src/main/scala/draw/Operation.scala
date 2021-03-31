@@ -3,10 +3,12 @@ package draw
 import java.awt.Point
 import java.awt.Color
 
-object Preferences {
+object Mode {
     var color: Color = Color.black
-    var operation: Operation = makeRect
+    var operation: Operation = MakeRect
     var fill = false
+    var backgroundColor = Color.white
+    var selected: Option[Element] = None
 }
 
 trait Operation {
@@ -15,8 +17,10 @@ trait Operation {
 }
 
 object Select extends Operation {
-    def click(point: Point): Unit = ???
-    def move(point: Point): Unit = ???
+    def click(point: Point): Unit = {
+        Mode.selected = GUI.canvas.elements.reverse.filter(_.hit(point)).headOption
+    }
+    def move(point: Point): Unit = {}
 }
 
 abstract class Maker extends Operation {
@@ -43,9 +47,15 @@ abstract class Maker extends Operation {
     }
 }
 
-object makeRect extends Maker {def makeShape(point: Point): Shape = new Rectangle(point)}
-object makeOval extends Maker {def makeShape(point: Point): Shape = new Oval(point)}
-object makeLine extends Maker {def makeShape(point: Point): Shape = new Line(point)}
+object MakeRect extends Maker {
+    def makeShape(point: Point): Shape = new Rectangle(point)
+}
+object MakeOval extends Maker {
+    def makeShape(point: Point): Shape = new Oval(point)
+}
+object MakeLine extends Maker {
+    def makeShape(point: Point): Shape = new Line(point)
+}
 
 
 

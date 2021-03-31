@@ -6,7 +6,7 @@ import scala.swing.event.MouseMoved
 import scala.swing.event.MouseClicked
 
 class Canvas extends Panel {
-    private val elements: Buffer[Element] = Buffer()
+    val elements: Buffer[Element] = Buffer()
     private val undos: Buffer[Element] = Buffer()
 
     listenTo(mouse.clicks)
@@ -14,12 +14,14 @@ class Canvas extends Panel {
 
     reactions += {
         case MouseMoved(_, point, _) => {
-            Preferences.operation.move(point)
+            Mode.operation.move(point)
         }
         case MouseClicked(_, point, _, _, _) => {
-            Preferences.operation.click(point)
+            Mode.operation.click(point)
         }
     }
+
+    def debug = f"${elements.size} elements; "
 
     def addElement(element: Element) = {
         elements += element
@@ -48,7 +50,11 @@ class Canvas extends Panel {
     }
     
     override def paintComponent(g: Graphics2D): Unit = {
+        g.setBackground(Mode.backgroundColor)
         g.clearRect(0, 0, 1000, 1000)
+        
         elements.foreach(_.draw(g))
+        g.setColor(black)
+        g.drawString(debug, 10, 20)
     }
 }
