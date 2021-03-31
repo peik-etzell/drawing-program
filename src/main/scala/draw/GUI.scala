@@ -6,12 +6,13 @@ import java.awt.Color._
 import scala.swing.event.{MouseClicked, MouseMoved, MouseDragged}
 import scala.collection.mutable.Buffer
 import javax.swing.UIManager
+import scala.swing.event.ButtonClicked
 
 object GUI extends SimpleSwingApplication {
     
     val defaultLook = new javax.swing.plaf.nimbus.NimbusLookAndFeel
     UIManager.setLookAndFeel(defaultLook)
-    
+
     // try {
     //     val systemLook = UIManager.getSystemLookAndFeelClassName()
     //     UIManager.setLookAndFeel(systemLook)
@@ -20,14 +21,21 @@ object GUI extends SimpleSwingApplication {
     // }
 
     var operation: Operation = makeRect
-    val canvas = new Canvas
+    val canvas = new Canvas // TODO: Some handling for background canvases after opening new ones on top
     var color = black
     
     val mainFrame = new MainFrame {
         title = "Drawing Program"
         
+        contents = canvas
+
+        size = new Dimension(800, 600)
+        val toggle = new ToggleButton("Fill Off")
+
+
         listenTo(canvas.mouse.moves)
         listenTo(canvas.mouse.clicks)
+        listenTo(toggle)
 
         reactions += {
             case MouseMoved(_, point, _) => {
@@ -36,7 +44,16 @@ object GUI extends SimpleSwingApplication {
             case MouseClicked(_, point, _, _, _) => {
                 Preferences.operation.click(point)
             }
-        }
+            case ButtonClicked(component) if component == toggle => {
+                toggle.text = if (toggle.selected) {
+                    Preferences.fill = true; "Fill On"
+                 } else {
+                    Preferences.fill = false; "Fill Off"
+                }
+                
+            }
+                
+        }   
 
         menuBar = new MenuBar {
             contents += new Menu("File") {
@@ -80,11 +97,10 @@ object GUI extends SimpleSwingApplication {
                 })
             }
 
-            // contents += new ToggleButton("Fill")
+            contents += toggle
 
             contents += new Button(Action("Clear") {
                 canvas.clear()
-                repaint()
             })
             contents += new Button(Action("Undo") {
                 canvas.undo()
@@ -112,9 +128,7 @@ object GUI extends SimpleSwingApplication {
         //     // layout(buttonsPanel) = North
         // }
 
-        contents = canvas
-
-        size = new Dimension(800, 600)
+        
     }
 
     def top = mainFrame

@@ -3,7 +3,7 @@ import scala.swing._
 import java.awt.Color._
 
 abstract class Element(var start: Point) {
-
+    def center: Point = ???
     def rotate() = ???
     def translate(xdir: Int, ydir: Int) = {
         this.start.translate(xdir, ydir)
@@ -13,11 +13,13 @@ abstract class Element(var start: Point) {
     }
 
     def draw(g: Graphics2D)
-    def getBounds() = ???
+    def hit(point: Point): Boolean = ???
 }
 
-abstract class Shape(start: Point, var color: Color = Preferences.color) extends Element(start) {
+abstract class Shape(start: Point) extends Element(start) {
+    var color: Color = Preferences.color
     var end: Point = start
+    var fill = Preferences.fill
 }
 
 class Oval(start: Point) extends Shape(start) {
@@ -37,7 +39,11 @@ class Rectangle(start: Point) extends Shape(start) {
         val y = min(start.y, end.y)
         
         g.setColor(color)
-        g.fillRect(x, y, dx, dy)
+        if (fill) {
+            g.fillRect(x, y, dx, dy)
+        } else {
+            g.drawRect(x, y, dx, dy)
+        }   
     }
 }
 

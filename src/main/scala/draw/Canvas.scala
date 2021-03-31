@@ -17,6 +17,7 @@ class Canvas extends Panel {
             val last = elements.last
             undos += last
             elements -= last
+            repaint()
         }
     }
     def redo() = {
@@ -24,6 +25,7 @@ class Canvas extends Panel {
             val elem = undos.last
             elements += elem
             undos -= elem
+            repaint()
         }
     }
 
