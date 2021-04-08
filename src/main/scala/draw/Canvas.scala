@@ -4,43 +4,66 @@ import java.awt.Color._
 import scala.collection.mutable.Buffer
 import scala.swing.event.MouseMoved
 import scala.swing.event.MouseClicked
+import scala.collection.mutable.Stack
+import scala.swing.event.MouseDragged
+import scala.swing.event.MouseReleased
+import scala.swing.event.MousePressed
 
 class Canvas extends Panel {
     val elements: Buffer[Element] = Buffer()
-    private val undos: Buffer[Element] = Buffer()
+    private val history: Stack[Operation] = Stack()
+    private val undone: Stack[Operation] = Stack()
 
     listenTo(mouse.clicks)
     listenTo(mouse.moves)
+
 
     reactions += {
         case MouseMoved(_, point, _) => {
             Mode.operation.move(point)
         }
-        case MouseClicked(_, point, _, _, _) => {
-            Mode.operation.click(point)
+        case MousePressed(_, point, _, _, _) => {
+            Mode.operation.press(point)
+        }
+        case MouseDragged(_, point, _) => {
+            Mode.operation.drag(point)
+        }
+        case MouseReleased(_, _, _, _, _) => {
+            Mode.operation.release()
         }
     }
-
-    def debug = f"${elements.size} elements; "
 
     def addElement(element: Element) = {
         elements += element
     }
+
+    def removeElement(element: Element) = {
+        elements -= element
+    }
+
+    def pushHistory(operation: Operation) = {
+        history.push(operation)
+        undone.clear()
+    }
     
     def undo() = {
-        if (elements.nonEmpty) {
-            val last = elements.last
-            undos += last
-            elements -= last
+        try {
+            val operation = history.pop()
+            operation.undo()
+            undone.push(operation)
             repaint()
+        } catch {
+            case e: NoSuchElementException => println("Nothing to undo.")
         }
     }
     def redo() = {
-        if (undos.nonEmpty) {
-            val elem = undos.last
-            elements += elem
-            undos -= elem
+        try {
+            val operation = undone.pop()
+            operation.redo()
+            history.push(operation)
             repaint()
+        } catch {
+            case e: NoSuchElementException => println("Nothing to redo.")
         }
     }
 
@@ -51,10 +74,10 @@ class Canvas extends Panel {
     
     override def paintComponent(g: Graphics2D): Unit = {
         g.setBackground(Mode.backgroundColor)
-        g.clearRect(0, 0, 1000, 1000)
+        g.clearRect(0, 0, 1920, 1080)
         
         elements.foreach(_.draw(g))
         g.setColor(black)
-        g.drawString(debug, 10, 20)
+        Debug.draw(g)
     }
 }
