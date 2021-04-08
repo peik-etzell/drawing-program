@@ -4,23 +4,26 @@ import scala.swing._
 import scala.swing.BorderPanel.Position._
 import java.awt.Color._
 import scala.collection.mutable.Buffer
-import javax.swing.UIManager
+import javax.swing.UIManager    
 import scala.swing.event.ButtonClicked
 
 object GUI extends SimpleSwingApplication {
-    
-    val defaultLook = new javax.swing.plaf.nimbus.NimbusLookAndFeel
-    UIManager.setLookAndFeel(defaultLook)
 
     try {
         val systemLook = UIManager.getSystemLookAndFeelClassName()
         UIManager.setLookAndFeel(systemLook)
     } catch {
-        case e: Exception => println("Error using your system UI style, using 'Nimbus'\n" + e)
+        case e: Exception => {
+            println("Error using your system UI style, using 'Nimbus'\n" + e)
+            val defaultLook = new javax.swing.plaf.nimbus.NimbusLookAndFeel
+            UIManager.setLookAndFeel(defaultLook)
+        }
     }
 
     val canvas = new Canvas // TODO: Some handling for background canvases after opening new ones on top
-    
+
+    def update() = canvas.repaint()
+
     val mainFrame = new MainFrame {
         title = "Drawing Program"
         
@@ -52,16 +55,16 @@ object GUI extends SimpleSwingApplication {
             }
             contents += new Menu("Shapes") {
                 contents += new MenuItem(Action("Oval") {
-                    Mode.operation = MakeOval
+                    Mode.operation = new MakeOval
                 })
                 contents += new MenuItem(Action("Rectangle") {
-                    Mode.operation = MakeRect
+                    Mode.operation = new MakeRect
                 })
                 contents += new MenuItem(Action("Line") {
-                    Mode.operation = MakeLine
+                    Mode.operation = new MakeLine
                 })
                 contents += new MenuItem(Action("Freehand") {
-                    ???
+                    Mode.operation = new MakeFreehand
                 })
             }
             contents += new Menu("Color") {
@@ -92,6 +95,18 @@ object GUI extends SimpleSwingApplication {
             })
             contents += new Button(Action("Redo") {
                 canvas.redo()
+            })
+            contents += new Button(Action("Translate") {
+                Mode.operation = new Translate
+                canvas.repaint()
+            })
+            contents += new Button(Action("Rotate") {
+                Mode.operation = new Rotate
+                canvas.repaint()
+            })
+            contents += new Button(Action("Scale") {
+                Mode.operation = new Scale
+                canvas.repaint()
             })
         }
 
