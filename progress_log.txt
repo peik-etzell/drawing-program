@@ -1,3 +1,4 @@
+31.3.2021
 - Added Operation.scala, which handles mouse clicks and moves depending on the mode that is selected,
 for example creating rectangles or moving elements etc.
 
@@ -19,5 +20,37 @@ and maybe multithreading also.
 No Unittesting has been done yet, only testing by hand, but that would be good to get going when more operations get implemented, 
 like rotations and such.
 So far maybe 20 hours of work have been put into this, feeling like it is progressing pretty good, ahead of schedule.
+
+
+14.4.2021
+Since last time I the bulk of the project has been done, left is multi-element operations, multi-canvas-
+support and filemanager saving and opening. Also planning to refine the UI a bit, maybe adding a sidepanel 
+with toggles and settings for the selected element. 
+
+- Operation.scala: 
+    Added MakeFreehand and MakeText, MakeText is still WIP
+    Added 2 linearTransformations: Scale and Rotate, and also Translate, which transform single elements for now
+    Added Select: for now gets Some(Element) that is under the cursor
+    Moved on from using Mouse.move to Mouse.press and drag for more natural interactions
+
+    object Mode is in this file temporarily
+
+- Element.scala:
+    Added Freehand drawing, Circles, TextBoxes, and a Debug object
+    Most elements now support hitboxes, and can then be rotated, scaled and Moved
+    Each element should get a parsing method in time for the Filemanager
+
+- GUI.scala:
+    Cleaned up the code and added buttons for the different actions
+
+- Canvas.scala:
+    Remade the Undo-Redo functions to support different transformations, calling the operations
+        Undo() method instead.
+
+- Added Tester.scala:
+    Will be used to automate the visual testing and some Unittesting
+    Pretty basic for now
+
+
 
 
