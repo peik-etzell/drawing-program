@@ -22,14 +22,9 @@ object GUI extends SimpleSwingApplication {
 
     val canvas = new Canvas // TODO: Some handling for background canvases after opening new ones on top
 
-    def update() = canvas.repaint()
-
     val mainFrame = new MainFrame {
         title = "Drawing Program"
-        
-        contents = canvas
 
-        size = new Dimension(800, 600)
         val toggle = new ToggleButton("Fill Off")
 
         listenTo(toggle)
@@ -54,35 +49,23 @@ object GUI extends SimpleSwingApplication {
                  })
             }
             contents += new Menu("Shapes") {
-                contents += new MenuItem(Action("Oval") {
-                    Mode.operation = new MakeOval
-                })
-                contents += new MenuItem(Action("Rectangle") {
-                    Mode.operation = new MakeRect
-                })
-                contents += new MenuItem(Action("Line") {
-                    Mode.operation = new MakeLine
-                })
-                contents += new MenuItem(Action("Freehand") {
-                    Mode.operation = new MakeFreehand
-                })
+                contents ++= Seq(
+                    new MenuItem(Action("Oval") {Mode.operation = new MakeOval}),
+                    new MenuItem(Action("Rectangle") {Mode.operation = new MakeRect}),
+                    new MenuItem(Action("Line") {Mode.operation = new MakeLine}),
+                    new MenuItem(Action("Freehand") {Mode.operation = new MakeFreehand}),
+                    new MenuItem(Action("TextBox") {Mode.operation = new MakeText})
+                )
             }
             contents += new Menu("Color") {
-                contents += new MenuItem(Action("Black") {
-                    Mode.color = black
-                })
-                contents += new MenuItem(Action("White") {
-                    Mode.color = white
-                })
-                contents += new MenuItem(Action("Blue") {
-                    Mode.color = blue
-                })
-                contents += new MenuItem(Action("Yellow") {
-                    Mode.color = yellow
-                })
-                contents += new MenuItem(Action("Red") {
-                    Mode.color = red
-                })
+                contents ++= Seq(
+                    new MenuItem(Action("Black") {Mode.color = black}),
+                    new MenuItem(Action("White") {Mode.color = white}),
+                    new MenuItem(Action("Blue") {Mode.color = blue}),
+                    new MenuItem(Action("Yellow") {Mode.color = yellow}),
+                    new MenuItem(Action("Red") {Mode.color = red}),
+                    new MenuItem(Action("Gray") {Mode.color = gray})
+                )
             }
 
             contents += toggle
@@ -108,6 +91,10 @@ object GUI extends SimpleSwingApplication {
                 Mode.operation = new Scale
                 canvas.repaint()
             })
+            contents += new Button(Action("Select") {
+                Mode.operation = Select
+                canvas.repaint()
+            })
         }
 
         // val buttonsPanel = new BoxPanel(Orientation.Horizontal) {
@@ -120,14 +107,14 @@ object GUI extends SimpleSwingApplication {
                 
         //     })
         // }
-        
-        // contents = new BorderPanel {
-        //     layout(canvas) = Center
-        //     // layout(buttonsPanel) = North
-        // }
-
-        
+        contents = new BorderPanel {
+            layout(canvas) = Center
+            
+        }
+        this.centerOnScreen()
     }
+    
 
     def top = mainFrame
+
 }
