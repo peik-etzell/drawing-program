@@ -12,9 +12,9 @@ trait Element {
     var color: Color = Mode.color
     var strokeSize = Mode.stroke
     val transformations: Buffer[Transformation] = Buffer()
+
     def points: Seq[Point]
     def center: Point 
-    
     def move(dx: Int, dy: Int) = this.points.foreach(_.translate(dx, dy))
 
     def render(g: Graphics2D)
@@ -64,6 +64,7 @@ trait Element {
                     val tempx = x * cos(theta) + y * sin(theta)
                     val tempy = y * cos(theta) + x * sin(-theta)
                     x = tempx
+                    
                     y = tempy
                 }
                 case Scaling(sx, sy) => {
@@ -117,7 +118,10 @@ class Rectangle(start: Point) extends Shape(start) {
     }
     
     def inside(point: Point): Boolean = {
-        point.x >= topx && point.y >= topy && point.x <= topx + width && point.y <= topy + height
+        point.x >= topx && 
+        point.y >= topy && 
+        point.x <= topx + width && 
+        point.y <= topy + height
     }
     
     def render(g: Graphics2D) = {
@@ -132,28 +136,56 @@ class Rectangle(start: Point) extends Shape(start) {
 class Line(start: Point) extends Shape(start) {
     def center = new Point((start.x + end.x) / 2, (start.y + end.y) / 2)
     def render(g: Graphics2D) = g.drawLine(start.x, start.y, end.x, end.y)
-    def inside(point: Point): Boolean = ???
+    def inside(point: Point): Boolean = {
+        val radius = 10
+        point.distance(start) + point.distance(end) <= start.distance(end) + radius
+    }
 }
 
-class TextBox(start: Point) extends Element {
-    def center: Point = ???
+class TextBox(start: Point, var text: String) extends Element {
+    var size: Int = Mode.fontSize
+    
+    def center: Point = start
     var points: Seq[Point] = Seq(start)
-    def render(g: Graphics2D) = {}
+    def render(g: Graphics2D) = {
+        g.setFont(g.getFont().deriveFont(size.toFloat))
+        g.drawString(text, start.x, start.y)
+    }
     def inside(point: Point): Boolean = ???
 }
 
-class Grouping(start: Point) extends Element {    
-    def center: Point = ???
-    private val elements = ???
-    var points: Seq[Point] = ???
+class Grouping extends Element { 
+    private val elements = Buffer[Element]()
+    var points: Seq[Point] = Seq()
+
+    def center: Point = {
+        // val mid = elements.map(elem => (elem.center.x, elem.center.y)).reduce((sum, p) => (sum._1 + p._1, sum._2 + p._2))
+        val x = elements.map(_.center.x).sum / elements.size
+        val y = elements.map(_.center.y).sum / elements.size
+        // new Point(mid._1 / elements.size, mid._2 / elements.size)
+        new Point(x, y)
+    }
+    
+    def addElement(element: Element) = {
+        elements += element
+        points = points ++ element.points
+    }
     def inside(point: Point): Boolean = ???
 
-    def render(g: Graphics2D) = {}
+    def render(g: Graphics2D) = {
+        for (element <- elements) {
+            element.draw(g)
+        }
+    }
 }
 
 class Freehand(start: Point) extends Shape(start) {
     private val line: Buffer[Point] = Buffer(start)
-    def center = new Point((line.head.x + line.last.x) / 2, (line.head.y + line.last.y) / 2)
+    def center = {
+        val x = points.map(_.x).sum / points.size
+        val y = points.map(_.y).sum / points.size
+        new Point(x, y)
+    }
     
     override def setPoint(point: Point) = {
         line += point
@@ -164,6 +196,8 @@ class Freehand(start: Point) extends Shape(start) {
     }
 
     override def points: Seq[Point] = line.toSeq
+
+    this.transformations += new Rotation(10)
 
     def render(g: Graphics2D) = {
         val pointPairs = {
@@ -190,6 +224,8 @@ object Debug extends Element {
         """  
     
     def render(g: Graphics2D) = {
+        g.setFont(g.getFont().deriveFont(15.toFloat))
+        
         var height = 0
         val lineSpacing = 15
 
