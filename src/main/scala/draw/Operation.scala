@@ -3,19 +3,23 @@ package draw
 import java.awt.Point
 import java.awt.Color._
 import scala.util.Random
+import scala.swing._
+import java.awt.Dimension
+import scala.swing.event._
+import scala.collection.mutable.Buffer
 
 object Mode {
     var operation: Operation = new MakeRect
     var color = black
     var fill = false
     var stroke = 5
+    var fontSize = 25
     var backgroundColor = white
     var selected: Option[Element] = None
 }
 
 trait Operation {
     def press(point: Point)
-    def move(point: Point)
     def drag(point: Point)
     def release()
     def undo()
@@ -24,22 +28,27 @@ trait Operation {
 
 object Select extends Operation {
     def press(point: Point): Unit = {
-        Mode.selected = GUI.canvas.elements.reverse.filter(_.hit(point)).headOption
+        Mode.selected = this.get(point)
     }
-    def move(point: Point) = {}
     def drag(point: Point): Unit = {}
     def release(): Unit = {}
     def undo() = {}
     def redo() = {}
+
+    def get(point: Point) = {
+        GUI.canvas.elements.reverse.filter(_.hit(point)).headOption
+    }
 }
 
+/**
+  * Makes shapes by dragging, 
+  */
 trait Maker extends Operation {
     var element: Option[Shape] = None
 
     def makeShape(point: Point): Shape
     def reset(): Unit 
     def press(point: Point) {}
-    def move(point: Point) {}
 
     def drag(point: Point): Unit = {
         if (element.isEmpty) {
@@ -77,41 +86,132 @@ class MakeLine extends Maker {
 class MakeFreehand extends Maker {
     def makeShape(point: Point): Shape = new Freehand(point)
     def reset(): Unit = {
-        Mode.operation = new MakeLine
+        Mode.operation = new MakeFreehand
     }
 }
 
-trait Transform extends Operation {
+class MakeText extends Operation {
+    var element: Option[TextBox] = None
+    
+    def press(point: Point): Unit = {
+        var text = ""
+           
+        new Frame {
+            title = "Text"
+            preferredSize = new Dimension(200, 70)
+            val textField = new TextField    
+            contents = new BoxPanel(scala.swing.Orientation.Horizontal) {
+                contents += textField
+                contents += new Button(Action("Done") {
+                    text = textField.text
+                    done()
+                })
+            }
+            def done() = {
+                textField.text
+                make()
+                close()
+            }
+            centerOnScreen()
+            visible = true
+        }
+
+        def make() = {
+            element = Some(new TextBox(point, text))
+            GUI.canvas.addElement(element.get)
+            GUI.canvas.pushHistory(this)
+            GUI.canvas.repaint()
+            Mode.operation = new MakeText
+        }
+        
+    }
+    
+    def drag(point: Point): Unit = {}
+    
+    def release(): Unit = {}
+    
+    def undo(): Unit = {}
+    
+    def redo(): Unit = {}
+    
+}
+
+// class MakeGroup extends Operation {
+//     var elements: Buffer[Element] = Buffer()
+
+
+//     def press(point: Point): Unit = {
+//         Select.get(point).foreach(elements += _)
+//     }
+    
+//     def drag(point: Point): Unit = ???
+    
+//     def release(): Unit = ???
+    
+//     def undo(): Unit = ???
+    
+//     def redo(): Unit = ???
+    
+// }
+
+/** Subclasses Rotate and Scale, Translate is not linear, 
+ * and can be better implemented without storing the transformation discretely in Element.  
+  */ 
+trait LinearTransformation extends Operation {
     val transformation: Transformation
     var element: Option[Element] = None
     var start: Option[Point] = None
     
     def press(point: Point): Unit = {
-        Select.press(point)
+        val underCursor = Select.get(point)
+        // if (underCursor = Mode.selected) {
+        //     element = 
+        // }
+
+        element = Select.get(point)
     }
 
     def release(): Unit
     def drag(point: Point): Unit
-    def move(point: Point): Unit = {}
     def undo(): Unit = element.foreach(_.transformations -= transformation)
     def redo(): Unit = element.foreach(_.transformations += transformation)
 
 }
-class Rotate extends Transform {
+class Rotate extends LinearTransformation {
     val transformation: Rotation = new Rotation
     
     def release(): Unit = {
         Mode.operation = new Rotate
     }
     def drag(point: Point): Unit = {
-        if (Mode.selected.isDefined) {
+        if (this.element.isDefined) {
             if (start.isEmpty) {
-                element = Mode.selected
                 start = Some(point)
                 element.foreach(_.transformations += transformation)
                 GUI.canvas.pushHistory(this)
             } else {
                 transformation.theta = 0.01 * (start.get.x - point.x)
+                GUI.canvas.repaint()
+            }
+        }
+    }
+}
+
+class Scale extends LinearTransformation {
+    val transformation: Scaling = new Scaling
+    
+    def release(): Unit = {
+        Mode.operation = new Scale
+    }
+    def drag(point: Point): Unit = {
+        if (this.element.isDefined) {
+            if (start.isEmpty) {
+                start = Some(point)
+                element.foreach(_.transformations += transformation)
+                GUI.canvas.pushHistory(this)
+            } else {
+                transformation.sx = 0.005 * (start.get.x - point.x) + 1.0
+                transformation.sy = 0.005 * (start.get.y - point.y) + 1.0
                 GUI.canvas.repaint()
             }
         }
@@ -125,18 +225,16 @@ class Translate extends Operation {
     var start: Option[Point] = None
     
     def press(point: Point): Unit = {
-        Select.press(point)
+        this.element = Select.get(point)
     }
 
     def release(): Unit = {
         Mode.operation = new Translate
     }
     def drag(point: Point): Unit = {
-        if (Mode.selected.isDefined) {
+        if (this.element.isDefined) {
             if (start.isEmpty) {
-                element = Mode.selected
                 start = Some(point)
-                
                 GUI.canvas.pushHistory(this)
             } else {
                 val dx = point.x - start.get.x
@@ -149,30 +247,7 @@ class Translate extends Operation {
             }
         }
     }
-    def move(point: Point): Unit = {}
     def undo(): Unit = element.foreach(_.move(-deltax, -deltay))
     def redo(): Unit = element.foreach(_.move(deltax, deltay))
 
-}
-
-class Scale extends Transform {
-    val transformation: Scaling = new Scaling
-    
-    def release(): Unit = {
-        Mode.operation = new Scale
-    }
-    def drag(point: Point): Unit = {
-        if (Mode.selected.isDefined) {
-            if (start.isEmpty) {
-                element = Mode.selected
-                start = Some(point)
-                element.foreach(_.transformations += transformation)
-                GUI.canvas.pushHistory(this)
-            } else {
-                transformation.sx = 0.005 * (start.get.x - point.x) + 1.0
-                transformation.sy = 0.005 * (start.get.y - point.y) + 1.0
-                GUI.canvas.repaint()
-            }
-        }
-    }
 }
