@@ -168,78 +168,39 @@ class MakeText extends Operation {
     
 }
 
-// class MakeGroup extends Operation {
-//     var elements: Buffer[Element] = Buffer()
-
-
-//     def press(point: Point): Unit = {
-//         Select.get(point).foreach(elements += _)
-//     }
-    
-//     def drag(point: Point): Unit = ???
-    
-//     def release(): Unit = ???
-    
-//     def undo(): Unit = ???
-    
-//     def redo(): Unit = ???
-    
-// }
-
 /** Subclasses Rotate and Scale, Translate is not linear, 
  * and can be better implemented without storing the transformation discretely in Element.  
   */ 
 trait LinearTransformation extends Operation {
-    var deltax = 0
-    var deltay = 0
     val transformation: Transformation
-    var elements: Buffer[Element] = Buffer()
+    var element: Option[Element] = None
     var start: Option[Point] = None
     
     def press(point: Point): Unit = {
-        val underCursor = Select.get(point)
-        if (underCursor.isEmpty) return
-
-        if (Mode.selected.contains(underCursor.get)) {
-            elements = Mode.selected
-        } else {
-            elements += underCursor.get
-        }
+        element = Select.get(point)
     }
 
     def release(): Unit
     def drag(point: Point): Unit
-    def undo(): Unit = elements.foreach(_.transformations -= transformation)
-    def redo(): Unit = elements.foreach(_.transformations += transformation)
+    def undo(): Unit = element.foreach(_.transformations -= transformation)
+    def redo(): Unit = element.foreach(_.transformations += transformation)
 
 }
 class Rotate extends LinearTransformation {
     val transformation: Rotation = new Rotation
-    
-    def centerOfRotation = {
-        val x = elements.map(_.center.x).sum / elements.size 
-        val y = elements.map(_.center.y).sum / elements.size
-        new Point(x, y)
-    }
 
     def release(): Unit = {
         Mode.operation = new Rotate
     }
 
     def drag(point: Point): Unit = {
-        if (this.elements.nonEmpty) {
+        if (this.element.isDefined) {
             if (start.isEmpty) {
                 start = Some(point)
-                elements.foreach(_.transformations += transformation)
+                element.foreach(_.transformations += transformation)
                 GUI.canvas.pushHistory(this)
             } else {
-                val dx = point.x - start.get.x
-                val dy = point.y - start.get.y
-                start = Some(point)
-                deltax += dx
-                deltay += dy
-                // transformation.theta = 0.01 * (start.get.x - point.x)
-                transformation.theta += 0.01 * dx
+                transformation.theta = 0.01 * (start.get.x - point.x)
             }
         }
     }
@@ -252,10 +213,10 @@ class Scale extends LinearTransformation {
         Mode.operation = new Scale
     }
     def drag(point: Point): Unit = {
-        if (this.elements.nonEmpty) {
+        if (this.element.nonEmpty) {
             if (start.isEmpty) {
                 start = Some(point)
-                elements.foreach(_.transformations += transformation)
+                element.foreach(_.transformations += transformation)
                 GUI.canvas.pushHistory(this)
             } else {
                 transformation.sx = 0.005 * (start.get.x - point.x) + 1.0
@@ -268,18 +229,26 @@ class Scale extends LinearTransformation {
 class Translate extends Operation {
     var deltax = 0
     var deltay = 0
-    var element: Option[Element] = None
+    var elements: Buffer[Element] = Buffer()
     var start: Option[Point] = None
     
     def press(point: Point): Unit = {
-        this.element = Select.get(point)
+        val underCursor = Select.get(point)
+        if (underCursor.isEmpty) return
+
+        if (Mode.selected.contains(underCursor.get)) {
+            elements = Mode.selected
+        } else {
+            elements += underCursor.get
+            Mode.selected.clear()
+        }
     }
 
     def release(): Unit = {
         Mode.operation = new Translate
     }
     def drag(point: Point): Unit = {
-        if (this.element.isDefined) {
+        if (this.elements.nonEmpty) {
             if (start.isEmpty) {
                 start = Some(point)
                 GUI.canvas.pushHistory(this)
@@ -289,11 +258,11 @@ class Translate extends Operation {
                 start = Some(point)
                 deltax += dx
                 deltay += dy
-                element.foreach(_.move(dx, dy))
+                elements.foreach(_.move(dx, dy))
             }
         }
     }
-    def undo(): Unit = element.foreach(_.move(-deltax, -deltay))
-    def redo(): Unit = element.foreach(_.move(deltax, deltay))
+    def undo(): Unit = elements.foreach(_.move(-deltax, -deltay))
+    def redo(): Unit = elements.foreach(_.move(deltax, deltay))
 
 }
