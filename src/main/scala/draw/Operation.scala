@@ -13,9 +13,8 @@ object Mode {
     var color = black
     var fill = false
     var stroke = 5
-    var fontSize = 25
     var backgroundColor = white
-    var selected: Option[Element] = None
+    var selected: Buffer[Element] = Buffer()
 }
 
 trait Operation {
@@ -28,16 +27,50 @@ trait Operation {
 
 object Select extends Operation {
     def press(point: Point): Unit = {
-        Mode.selected = this.get(point)
+        val underMouse = this.get(point)
+        if (underMouse.isEmpty) {
+            Mode.selected.clear()
+        } else if (Mode.selected.contains(underMouse.head)) {
+            Mode.selected -= underMouse.head
+        } else {
+            Mode.selected += underMouse.head
+        }
     }
     def drag(point: Point): Unit = {}
     def release(): Unit = {}
     def undo() = {}
     def redo() = {}
 
-    def get(point: Point) = {
-        GUI.canvas.elements.reverse.filter(_.hit(point)).headOption
+    def get(point: Point): Option[Element] = {
+        val underCursor = GUI.canvas.elements.reverse.filter(_.hit(point)).headOption
+        if (underCursor.isEmpty) {
+            Mode.selected.clear()
+        } 
+        underCursor
     }
+}
+
+class Remove extends Operation {
+    var element: Option[Element] = None
+    
+    def press(point: Point): Unit = {
+        element = Select.get(point)
+        element.foreach(GUI.canvas.removeElement)
+    }
+    
+    def drag(point: Point): Unit = {}
+    
+    def release(): Unit = {
+        Mode.operation = new Remove
+    }
+    def undo(): Unit = {
+        element.foreach(GUI.canvas.addElement)
+    }
+    
+    def redo(): Unit = {
+        element.foreach(GUI.canvas.removeElement)
+    }
+    
 }
 
 /**
@@ -46,19 +79,16 @@ object Select extends Operation {
 trait Maker extends Operation {
     var element: Option[Shape] = None
 
-    def makeShape(point: Point): Shape
+    def makeShape: Shape
     def reset(): Unit 
-    def press(point: Point) {}
+    def press(point: Point) {
+        element = Some(makeShape)
+        GUI.canvas.addElement(element.get)
+        GUI.canvas.pushHistory(this)
+    }
 
-    def drag(point: Point): Unit = {
-        if (element.isEmpty) {
-            element = Some(makeShape(point))
-            GUI.canvas.addElement(element.get)
-            GUI.canvas.pushHistory(this)
-        } else {
-            element.foreach(_.setPoint(point))
-            GUI.canvas.repaint()
-        }
+    def drag(point: Point): Unit = { 
+        element.foreach(_.setPoint(point))        
     }
     def release(): Unit = reset()
     def undo() = GUI.canvas.removeElement(element.get)
@@ -66,25 +96,25 @@ trait Maker extends Operation {
 }
 
 class MakeRect extends Maker {
-    def makeShape(point: Point): Shape = new Rectangle(point)
+    def makeShape: Shape = new Rectangle
     def reset(): Unit = {
         Mode.operation = new MakeRect
     }
 }
 class MakeOval extends Maker {
-    def makeShape(point: Point): Shape = new Oval(point)
+    def makeShape: Shape = new Oval
     def reset(): Unit = {
         Mode.operation = new MakeOval
     }
 }
 class MakeLine extends Maker {
-    def makeShape(point: Point): Shape = new Line(point)
+    def makeShape: Shape = new Line
     def reset(): Unit = {
         Mode.operation = new MakeLine
     }
 }
 class MakeFreehand extends Maker {
-    def makeShape(point: Point): Shape = new Freehand(point)
+    def makeShape: Shape = new Freehand
     def reset(): Unit = {
         Mode.operation = new MakeFreehand
     }
@@ -117,7 +147,9 @@ class MakeText extends Operation {
         }
 
         def make() = {
-            element = Some(new TextBox(point, text))
+            element = Some(new TextBox)
+            element.foreach(_.setPoint(point))
+            element.foreach(_.text = text)
             GUI.canvas.addElement(element.get)
             GUI.canvas.pushHistory(this)
             GUI.canvas.repaint()
@@ -130,9 +162,9 @@ class MakeText extends Operation {
     
     def release(): Unit = {}
     
-    def undo(): Unit = {}
+    def undo(): Unit = {GUI.canvas.removeElement(element.get)}
     
-    def redo(): Unit = {}
+    def redo(): Unit = {GUI.canvas.addElement(element.get)}
     
 }
 
@@ -158,40 +190,56 @@ class MakeText extends Operation {
  * and can be better implemented without storing the transformation discretely in Element.  
   */ 
 trait LinearTransformation extends Operation {
+    var deltax = 0
+    var deltay = 0
     val transformation: Transformation
-    var element: Option[Element] = None
+    var elements: Buffer[Element] = Buffer()
     var start: Option[Point] = None
     
     def press(point: Point): Unit = {
         val underCursor = Select.get(point)
-        // if (underCursor = Mode.selected) {
-        //     element = 
-        // }
+        if (underCursor.isEmpty) return
 
-        element = Select.get(point)
+        if (Mode.selected.contains(underCursor.get)) {
+            elements = Mode.selected
+        } else {
+            elements += underCursor.get
+        }
     }
 
     def release(): Unit
     def drag(point: Point): Unit
-    def undo(): Unit = element.foreach(_.transformations -= transformation)
-    def redo(): Unit = element.foreach(_.transformations += transformation)
+    def undo(): Unit = elements.foreach(_.transformations -= transformation)
+    def redo(): Unit = elements.foreach(_.transformations += transformation)
 
 }
 class Rotate extends LinearTransformation {
     val transformation: Rotation = new Rotation
     
+    def centerOfRotation = {
+        val x = elements.map(_.center.x).sum / elements.size 
+        val y = elements.map(_.center.y).sum / elements.size
+        new Point(x, y)
+    }
+
     def release(): Unit = {
         Mode.operation = new Rotate
     }
+
     def drag(point: Point): Unit = {
-        if (this.element.isDefined) {
+        if (this.elements.nonEmpty) {
             if (start.isEmpty) {
                 start = Some(point)
-                element.foreach(_.transformations += transformation)
+                elements.foreach(_.transformations += transformation)
                 GUI.canvas.pushHistory(this)
             } else {
-                transformation.theta = 0.01 * (start.get.x - point.x)
-                GUI.canvas.repaint()
+                val dx = point.x - start.get.x
+                val dy = point.y - start.get.y
+                start = Some(point)
+                deltax += dx
+                deltay += dy
+                // transformation.theta = 0.01 * (start.get.x - point.x)
+                transformation.theta += 0.01 * dx
             }
         }
     }
@@ -204,15 +252,14 @@ class Scale extends LinearTransformation {
         Mode.operation = new Scale
     }
     def drag(point: Point): Unit = {
-        if (this.element.isDefined) {
+        if (this.elements.nonEmpty) {
             if (start.isEmpty) {
                 start = Some(point)
-                element.foreach(_.transformations += transformation)
+                elements.foreach(_.transformations += transformation)
                 GUI.canvas.pushHistory(this)
             } else {
                 transformation.sx = 0.005 * (start.get.x - point.x) + 1.0
                 transformation.sy = 0.005 * (start.get.y - point.y) + 1.0
-                GUI.canvas.repaint()
             }
         }
     }
@@ -243,7 +290,6 @@ class Translate extends Operation {
                 deltax += dx
                 deltay += dy
                 element.foreach(_.move(dx, dy))
-                GUI.canvas.repaint()
             }
         }
     }
