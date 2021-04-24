@@ -6,9 +6,12 @@ import scala.collection.mutable.Stack
 import scala.swing.event.MouseDragged
 import scala.swing.event.MouseReleased
 import scala.swing.event.MousePressed
+import scala.swing.event.Key._
+import scala.swing.event.Key
 
-class Canvas(val elements: Buffer[Element] = Buffer()) extends Panel {
-    
+class Canvas() extends Panel {
+    var elements: Buffer[Element] = Buffer()
+    private val recent: Stack[Buffer[Element]] = Stack()
     private val history: Stack[Operation] = Stack()
     private val undone: Stack[Operation] = Stack()
 
@@ -19,14 +22,20 @@ class Canvas(val elements: Buffer[Element] = Buffer()) extends Panel {
 
 
     reactions += {
+        case MousePressed(_, point, 1152, _, _) => { // Pressed with control
+            Select.press(point)
+        }
         case MousePressed(_, point, _, _, _) => {
             Mode.operation.press(point)
+            this.repaint()
         }
         case MouseDragged(_, point, _) => {
             Mode.operation.drag(point)
+            this.repaint()
         }
         case MouseReleased(_, _, _, _, _) => {
             Mode.operation.release()
+            this.repaint()
         }
     }
 
@@ -41,6 +50,20 @@ class Canvas(val elements: Buffer[Element] = Buffer()) extends Panel {
     def pushHistory(operation: Operation) = {
         history.push(operation)
         undone.clear()
+    }
+
+    def open(elems: Buffer[Element]) = {
+        recent.push(elements)
+        elements = elems
+        repaint()
+    }
+
+    def close() = {
+        if (!recent.isEmpty) {
+            elements = recent.pop()
+        } else {
+            elements.clear()
+        }
     }
     
     def undo() = {
@@ -70,6 +93,7 @@ class Canvas(val elements: Buffer[Element] = Buffer()) extends Panel {
     }
     
     override def paintComponent(g: Graphics2D): Unit = {
+        g.setFont(new Font("Monospaced", 0, 25))
         g.setBackground(Mode.backgroundColor)
         g.clearRect(0, 0, 1920, 1080)
         
