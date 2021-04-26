@@ -10,13 +10,9 @@ case class Scaling(var sx: Double = 1.0, var sy: Double = 1.0) extends Transform
 
 trait Element {
     val transformations: Buffer[Transformation] = Buffer()
-    var color: Color = Mode.color 
-    var strokeSize: Int = Mode.stroke
-    var fill: Boolean = Mode.fill
-
-    val sidePanel = new GridPanel(10, 2) {
-        preferredSize = new Dimension(100, 50)
-    }
+    var color: Color = Canvas.color 
+    var strokeSize: Int = Canvas.stroke
+    var fill: Boolean = Canvas.fill
 
     def points: Seq[Point]
     def setPoint(point: Point)
@@ -27,7 +23,7 @@ trait Element {
 
     def draw(g: Graphics2D) = {
         g.setColor(color)
-        g.setStroke(new BasicStroke(strokeSize))
+        g.setStroke(new BasicStroke(strokeSize, 2, 0))
        
         g.translate(center.x, center.y)
         for (t <- transformations.reverse) {
@@ -83,7 +79,7 @@ trait Element {
     def inside(point: Point): Boolean
 }
 
-abstract class Shape extends Element {
+trait Shape extends Element {
     var points: Buffer[Point] = Buffer(new Point(0, 0), new Point(0, 0))
     private var started = false
     def setPoint(point: Point) = {
@@ -161,7 +157,7 @@ class Freehand extends Shape {
     }
     def render(g: Graphics2D) = {
         val pointPairs = {
-            points.dropRight(1) zip points.tail
+            points.dropRight(1) zip points.drop(1)
         }
         for (pair <- pointPairs) {
             val start = pair._1
@@ -203,10 +199,10 @@ object Debug extends Element {
     def inside(point: Point): Boolean = false
     
     def printout = f"""
-        color:      ${Mode.color}
-        operation:  ${Mode.operation}
-        fill:       ${Mode.fill}
-        selected:   ${Mode.selected}
+        color:      ${Canvas.color}
+        operation:  ${Canvas.operation}
+        fill:       ${Canvas.fill}
+        selected:   ${Canvas.selected}
         """  
     
     def render(g: Graphics2D) = {

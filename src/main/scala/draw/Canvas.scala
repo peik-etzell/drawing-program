@@ -6,14 +6,19 @@ import scala.collection.mutable.Stack
 import scala.swing.event.MouseDragged
 import scala.swing.event.MouseReleased
 import scala.swing.event.MousePressed
-import scala.swing.event.Key._
 import scala.swing.event.Key
 
-class Canvas() extends Panel {
+object Canvas extends Panel {
     var elements: Buffer[Element] = Buffer()
     private val recent: Stack[Buffer[Element]] = Stack()
     private val history: Stack[Operation] = Stack()
     private val undone: Stack[Operation] = Stack()
+
+    var operation: Operation = new MakeRect
+    var color = black
+    var fill = false
+    var stroke = 15
+    val selected: Buffer[Element] = Buffer()
 
     preferredSize = new Dimension(1280, 960)
 
@@ -26,15 +31,15 @@ class Canvas() extends Panel {
             Select.press(point)
         }
         case MousePressed(_, point, _, _, _) => {
-            Mode.operation.press(point)
+            operation.press(point)
             this.repaint()
         }
         case MouseDragged(_, point, _) => {
-            Mode.operation.drag(point)
+            operation.drag(point)
             this.repaint()
         }
         case MouseReleased(_, _, _, _, _) => {
-            Mode.operation.release()
+            operation.release()
             this.repaint()
         }
     }
@@ -64,6 +69,7 @@ class Canvas() extends Panel {
         } else {
             elements.clear()
         }
+        repaint()
     }
     
     def undo() = {
@@ -87,18 +93,12 @@ class Canvas() extends Panel {
         }
     }
 
-    def clear() = {
-        elements.clear()
-        repaint()
-    }
-    
     override def paintComponent(g: Graphics2D): Unit = {
         g.setFont(new Font("Monospaced", 0, 25))
-        g.setBackground(Mode.backgroundColor)
+        g.setBackground(white)
         g.clearRect(0, 0, 1920, 1080)
         
         elements.foreach(_.draw(g))
-        g.setColor(black)
         Debug.draw(g)
     }
 }

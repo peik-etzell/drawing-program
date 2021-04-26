@@ -20,76 +20,113 @@ object GUI extends SimpleSwingApplication {
         }
     }
 
-    val canvas = new Canvas
-
     val mainFrame = new MainFrame {
         val fillToggle = new ToggleButton("Fill Off")
-        
-        listenTo(fillToggle)
 
+        listenTo(fillToggle)
 
         reactions += {
             case ButtonClicked(component) if component == fillToggle => {
-                fillToggle.text = if (fillToggle.selected) {
-                    Mode.fill = true; "Fill On"
+                if (Canvas.selected.nonEmpty) {
+                    Canvas.selected.foreach(elem => elem.fill = !elem.fill)
+                    Canvas.repaint()
                 } else {
-                    Mode.fill = false; "Fill Off"
+
+                
+                    fillToggle.text = if (fillToggle.selected) {
+                        Canvas.fill = true; "Fill On"
+                    } else {
+                        Canvas.fill = false; "Fill Off"
+                    }
+                    Canvas.repaint()
                 }
-                canvas.repaint()
             }
         }   
-
 
         menuBar = new MenuBar {
             contents ++= Seq(
                 new Menu("File") {
                     contents ++= Seq(
-                        FileManager.open(),
+                        FileManager.fileMenu,
                         new MenuItem(Action("Save") {
                             FileManager.save()
+                        }),
+                        new MenuItem(Action("Close") {
+                            Canvas.close()
                         })
                     )
                 },
                 new Menu("Shapes") {
                     contents ++= Seq(
-                        new MenuItem(Action("Oval")         {Mode.operation = new MakeOval}),
-                        new MenuItem(Action("Rectangle")    {Mode.operation = new MakeRect}),
-                        new MenuItem(Action("Line")         {Mode.operation = new MakeLine}),
-                        new MenuItem(Action("Freehand")     {Mode.operation = new MakeFreehand}),
-                        new MenuItem(Action("TextBox")      {Mode.operation = new MakeText})
+                        new MenuItem(Action("Oval")         {Canvas.operation = new MakeOval}),
+                        new MenuItem(Action("Rectangle")    {Canvas.operation = new MakeRect}),
+                        new MenuItem(Action("Line")         {Canvas.operation = new MakeLine}),
+                        new MenuItem(Action("Freehand")     {Canvas.operation = new MakeFreehand}),
+                        new MenuItem(Action("TextBox")      {Canvas.operation = new MakeText})
                     )
                 },
-                new Menu("Color") {
+                
+                new Menu("Operations") {
                     contents ++= Seq(
-                        new MenuItem(Action("Black")        {Mode.color = black}),
-                        new MenuItem(Action("White")        {Mode.color = white}),
-                        new MenuItem(Action("Blue")         {Mode.color = blue}),
-                        new MenuItem(Action("Yellow")       {Mode.color = yellow}),
-                        new MenuItem(Action("Red")          {Mode.color = red}),
-                        new MenuItem(Action("Gray")         {Mode.color = gray})
+                        new MenuItem(Action("Translate")    {Canvas.operation = new Translate; Canvas.repaint()}),
+                        new MenuItem(Action("Rotate")       {Canvas.operation = new Rotate; Canvas.repaint()}),
+                        new MenuItem(Action("Scale")        {Canvas.operation = new Scale; Canvas.repaint()})
                     )
                 },
-                fillToggle,
-                new Button(Action("Remove")                 {Mode.operation = new Remove}),
-                new Button(Action("Undo")                   {canvas.undo()}),
-                new Button(Action("Redo")                   {canvas.redo()}),
-                new Button(Action("Translate")              {Mode.operation = new Translate; canvas.repaint()}),
-                new Button(Action("Rotate") {
-                    Mode.operation = new Rotate
-                    canvas.repaint()
-                }),
-                new Button(Action("Scale") {
-                    Mode.operation = new Scale
-                    canvas.repaint()
-                }),
+                new Menu("Attributes") {
+                    contents ++= Seq(
+                        new BoxPanel(Orientation.Horizontal) {    
+                            val label = new Label("Stroke: [15]  ")
+                            def update(ds: Int) = {
+                                if (Canvas.selected.nonEmpty) {
+                                    Canvas.selected.foreach(_.strokeSize += ds)
+                                    Canvas.repaint()
+                                } else {
+                                    Canvas.stroke += ds
+                                    label.text = f"Stroke: [${Canvas.stroke}]  "
+                                }
+                                
+                                Canvas.stroke += ds
+                            }
+                            this.contents += label
+                            this.contents += new Button(Action("-") {update(-1)})
+                            this.contents += new Button(Action("+") {update(1)})
+                        },
+                        fillToggle,
+                        new Menu("Color") {
+                            def update(color: Color) {
+                                if (Canvas.selected.nonEmpty) {
+                                    Canvas.selected.foreach(_.color = color)
+                                    Canvas.repaint()
+                                } else {
+                                    Canvas.color = color
+                                }
+                            }
+                            contents ++= Seq(
+                                new MenuItem(Action("Black")        {update(black)}),
+                                new MenuItem(Action("White")        {update(white)}),
+                                new MenuItem(Action("Blue")         {update(blue)}),
+                                new MenuItem(Action("Yellow")       {update(yellow)}),
+                                new MenuItem(Action("Red")          {update(red)}),
+                                new MenuItem(Action("Green")        {update(green)})
+                            )
+                        },
+
+                    )
+                },
+                new Button(Action("Remove")                 {Canvas.operation = new Remove}),
+                new Button(Action("Undo")                   {Canvas.undo()}),
+                new Button(Action("Redo")                   {Canvas.redo()}),
                 new Button(Action("Select") {
-                    Mode.operation = Select
-                    canvas.repaint()
+                    Canvas.operation = Select
+                    Canvas.repaint()
                 })
+
             )
         }
 
-        contents = canvas
+
+        contents = Canvas
         this.centerOnScreen()
     }
     

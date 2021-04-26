@@ -8,15 +8,6 @@ import java.awt.Dimension
 import scala.swing.event._
 import scala.collection.mutable.Buffer
 
-object Mode {
-    var operation: Operation = new MakeRect
-    var color = black
-    var fill = false
-    var stroke = 5
-    var backgroundColor = white
-    var selected: Buffer[Element] = Buffer()
-}
-
 trait Operation {
     def press(point: Point)
     def drag(point: Point)
@@ -29,11 +20,11 @@ object Select extends Operation {
     def press(point: Point): Unit = {
         val underMouse = this.get(point)
         if (underMouse.isEmpty) {
-            Mode.selected.clear()
-        } else if (Mode.selected.contains(underMouse.head)) {
-            Mode.selected -= underMouse.head
+            Canvas.selected.clear()
+        } else if (Canvas.selected.contains(underMouse.head)) {
+            Canvas.selected -= underMouse.head
         } else {
-            Mode.selected += underMouse.head
+            Canvas.selected += underMouse.head
         }
     }
     def drag(point: Point): Unit = {}
@@ -42,9 +33,9 @@ object Select extends Operation {
     def redo() = {}
 
     def get(point: Point): Option[Element] = {
-        val underCursor = GUI.canvas.elements.reverse.filter(_.hit(point)).headOption
+        val underCursor = Canvas.elements.reverse.filter(_.hit(point)).headOption
         if (underCursor.isEmpty) {
-            Mode.selected.clear()
+            Canvas.selected.clear()
         } 
         underCursor
     }
@@ -55,20 +46,21 @@ class Remove extends Operation {
     
     def press(point: Point): Unit = {
         element = Select.get(point)
-        element.foreach(GUI.canvas.removeElement)
+        element.foreach(Canvas.removeElement)
+        Canvas.pushHistory(this)
     }
     
     def drag(point: Point): Unit = {}
     
     def release(): Unit = {
-        Mode.operation = new Remove
+        Canvas.operation = new Remove
     }
     def undo(): Unit = {
-        element.foreach(GUI.canvas.addElement)
+        element.foreach(Canvas.addElement)
     }
     
     def redo(): Unit = {
-        element.foreach(GUI.canvas.removeElement)
+        element.foreach(Canvas.removeElement)
     }
     
 }
@@ -83,40 +75,41 @@ trait Maker extends Operation {
     def reset(): Unit 
     def press(point: Point) {
         element = Some(makeShape)
-        GUI.canvas.addElement(element.get)
-        GUI.canvas.pushHistory(this)
+        Canvas.addElement(element.get)
+        Canvas.pushHistory(this)
+        Canvas.selected.clear()
     }
 
     def drag(point: Point): Unit = { 
         element.foreach(_.setPoint(point))        
     }
     def release(): Unit = reset()
-    def undo() = GUI.canvas.removeElement(element.get)
-    def redo() = GUI.canvas.addElement(element.get)
+    def undo() = Canvas.removeElement(element.get)
+    def redo() = Canvas.addElement(element.get)
 }
 
 class MakeRect extends Maker {
     def makeShape: Shape = new Rectangle
     def reset(): Unit = {
-        Mode.operation = new MakeRect
+        Canvas.operation = new MakeRect
     }
 }
 class MakeOval extends Maker {
     def makeShape: Shape = new Oval
     def reset(): Unit = {
-        Mode.operation = new MakeOval
+        Canvas.operation = new MakeOval
     }
 }
 class MakeLine extends Maker {
     def makeShape: Shape = new Line
     def reset(): Unit = {
-        Mode.operation = new MakeLine
+        Canvas.operation = new MakeLine
     }
 }
 class MakeFreehand extends Maker {
     def makeShape: Shape = new Freehand
     def reset(): Unit = {
-        Mode.operation = new MakeFreehand
+        Canvas.operation = new MakeFreehand
     }
 }
 
@@ -150,10 +143,11 @@ class MakeText extends Operation {
             element = Some(new TextBox)
             element.foreach(_.setPoint(point))
             element.foreach(_.text = text)
-            GUI.canvas.addElement(element.get)
-            GUI.canvas.pushHistory(this)
-            GUI.canvas.repaint()
-            Mode.operation = new MakeText
+            Canvas.addElement(element.get)
+            Canvas.pushHistory(this)
+            Canvas.selected.clear()
+            Canvas.repaint()
+            Canvas.operation = new MakeText
         }
         
     }
@@ -162,9 +156,9 @@ class MakeText extends Operation {
     
     def release(): Unit = {}
     
-    def undo(): Unit = {GUI.canvas.removeElement(element.get)}
+    def undo(): Unit = {Canvas.removeElement(element.get)}
     
-    def redo(): Unit = {GUI.canvas.addElement(element.get)}
+    def redo(): Unit = {Canvas.addElement(element.get)}
     
 }
 
@@ -190,7 +184,7 @@ class Rotate extends LinearTransformation {
     val transformation: Rotation = new Rotation
 
     def release(): Unit = {
-        Mode.operation = new Rotate
+        Canvas.operation = new Rotate
     }
 
     def drag(point: Point): Unit = {
@@ -198,7 +192,7 @@ class Rotate extends LinearTransformation {
             if (start.isEmpty) {
                 start = Some(point)
                 element.foreach(_.transformations += transformation)
-                GUI.canvas.pushHistory(this)
+                Canvas.pushHistory(this)
             } else {
                 transformation.theta = 0.01 * (start.get.x - point.x)
             }
@@ -210,14 +204,14 @@ class Scale extends LinearTransformation {
     val transformation: Scaling = new Scaling
     
     def release(): Unit = {
-        Mode.operation = new Scale
+        Canvas.operation = new Scale
     }
     def drag(point: Point): Unit = {
         if (this.element.nonEmpty) {
             if (start.isEmpty) {
                 start = Some(point)
                 element.foreach(_.transformations += transformation)
-                GUI.canvas.pushHistory(this)
+                Canvas.pushHistory(this)
             } else {
                 transformation.sx = 0.005 * (start.get.x - point.x) + 1.0
                 transformation.sy = 0.005 * (start.get.y - point.y) + 1.0
@@ -227,31 +221,31 @@ class Scale extends LinearTransformation {
 }
 
 class Translate extends Operation {
-    var deltax = 0
-    var deltay = 0
-    var elements: Buffer[Element] = Buffer()
-    var start: Option[Point] = None
+    private var deltax = 0
+    private var deltay = 0
+    private var elements: Buffer[Element] = Buffer()
+    private var start: Option[Point] = None
     
     def press(point: Point): Unit = {
         val underCursor = Select.get(point)
         if (underCursor.isEmpty) return
 
-        if (Mode.selected.contains(underCursor.get)) {
-            elements = Mode.selected
+        if (Canvas.selected.contains(underCursor.get)) {
+            elements = Canvas.selected
         } else {
             elements += underCursor.get
-            Mode.selected.clear()
+            Canvas.selected.clear()
         }
     }
 
     def release(): Unit = {
-        Mode.operation = new Translate
+        Canvas.operation = new Translate
     }
     def drag(point: Point): Unit = {
         if (this.elements.nonEmpty) {
             if (start.isEmpty) {
                 start = Some(point)
-                GUI.canvas.pushHistory(this)
+                Canvas.pushHistory(this)
             } else {
                 val dx = point.x - start.get.x
                 val dy = point.y - start.get.y
