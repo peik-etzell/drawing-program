@@ -8,7 +8,6 @@ import javax.swing.UIManager
 import scala.swing.event.ButtonClicked
 
 object GUI extends SimpleSwingApplication {
-
     try {
         val systemLook = UIManager.getSystemLookAndFeelClassName()
         UIManager.setLookAndFeel(systemLook)
@@ -22,8 +21,9 @@ object GUI extends SimpleSwingApplication {
 
     val mainFrame = new MainFrame {
         val fillToggle = new ToggleButton("Fill Off")
+        val debugToggle = new ToggleButton("Debug Off")
 
-        listenTo(fillToggle)
+        listenTo(fillToggle, debugToggle)
 
         reactions += {
             case ButtonClicked(component) if component == fillToggle => {
@@ -31,14 +31,19 @@ object GUI extends SimpleSwingApplication {
                     Canvas.selected.foreach(elem => elem.fill = !elem.fill)
                     Canvas.repaint()
                 } else {
-
-                
                     fillToggle.text = if (fillToggle.selected) {
                         Canvas.fill = true; "Fill On"
                     } else {
                         Canvas.fill = false; "Fill Off"
                     }
                     Canvas.repaint()
+                }
+            }
+            case ButtonClicked(component) if component == debugToggle => {
+                debugToggle.text = {
+                    Canvas.debug = !Canvas.debug
+                    if (Canvas.debug) "Debug On"
+                    else "Debug Off"
                 }
             }
         }   
@@ -92,9 +97,9 @@ object GUI extends SimpleSwingApplication {
                             this.contents += new Button(Action("-") {update(-1)})
                             this.contents += new Button(Action("+") {update(1)})
                         },
-                        fillToggle,
+                        fillToggle,         // Defined up top
                         new Menu("Color") {
-                            def update(color: Color) {
+                            def update(color: Color) = {
                                 if (Canvas.selected.nonEmpty) {
                                     Canvas.selected.foreach(_.color = color)
                                     Canvas.repaint()
@@ -111,7 +116,6 @@ object GUI extends SimpleSwingApplication {
                                 new MenuItem(Action("Green")        {update(green)})
                             )
                         },
-
                     )
                 },
                 new Button(Action("Remove")                 {Canvas.operation = new Remove}),
@@ -120,16 +124,13 @@ object GUI extends SimpleSwingApplication {
                 new Button(Action("Select") {
                     Canvas.operation = Select
                     Canvas.repaint()
-                })
-
+                }),
+                debugToggle
             )
         }
-
-
         contents = Canvas
         this.centerOnScreen()
-    }
-    
+    }    
     def top = mainFrame
 
 }

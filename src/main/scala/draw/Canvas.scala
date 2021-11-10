@@ -19,6 +19,7 @@ object Canvas extends Panel {
     var fill = false
     var stroke = 15
     val selected: Buffer[Element] = Buffer()
+    var debug = false
 
     preferredSize = new Dimension(1280, 960)
 
@@ -99,6 +100,7 @@ object Canvas extends Panel {
         g.clearRect(0, 0, 1920, 1080)
         
         elements.foreach(_.draw(g))
-        Debug.draw(g)
+        
+        if (debug) Debug.draw(g)
     }
 }

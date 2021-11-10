@@ -104,6 +104,7 @@ class Oval extends Shape {
             g.drawOval(points(0).x - r, points(0).y - r, 2 * r, 2 * r)
         }
     }
+    override def toString(): String = f"Oval[${center.x}, ${center.y}]"
 }
 
 class Rectangle extends Shape {
@@ -131,6 +132,8 @@ class Rectangle extends Shape {
             g.drawRect(topx, topy, width, height)
         }   
     }
+
+    override def toString(): String = f"Rectangle[${center.x}, ${center.y}]"
 }
 
 class Line extends Shape {
@@ -140,6 +143,8 @@ class Line extends Shape {
         val radius = 10
         point.distance(points(0)) + point.distance(points(1)) <= points(0).distance(points(1)) + radius
     }
+
+    override def toString(): String = f"Line[from=(${points(0).x}, ${points(0).y}) to=(${points(1).x}, ${points(1).y})]"
 }
 
 class Freehand extends Shape {
@@ -165,6 +170,8 @@ class Freehand extends Shape {
             g.drawLine(start.x, start.y, end.x, end.y)
         }
     }
+
+    override def toString(): String = "Freehand"
 }
 
 class TextBox extends Element {
@@ -190,6 +197,8 @@ class TextBox extends Element {
         point.x <= center.x + width / 2 && 
         point.y <= center.y + height / 2
     }
+
+    override def toString(): String = f"TextBox['${text}']"
 }
 
 object Debug extends Element {
@@ -202,7 +211,7 @@ object Debug extends Element {
         color:      ${Canvas.color}
         operation:  ${Canvas.operation}
         fill:       ${Canvas.fill}
-        selected:   ${Canvas.selected}
+        selected:   [${Canvas.selected.mkString(", ")}]
         """  
     
     def render(g: Graphics2D) = {
