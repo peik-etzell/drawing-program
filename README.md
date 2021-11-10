@@ -24,3 +24,5 @@ Their attributes can be altered:
 * Color
 
 Everything comes with unlimited undo/redo capability, and multiple elements can be selected and moved/recolored/etc. at the same time. Files can be saved and reopened later. 
+
+![Screenshot of the testfile](https://github.com/peik-etzell/drawing-program/blob/master/screenshot.png)
